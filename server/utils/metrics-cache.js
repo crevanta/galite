@@ -129,7 +129,7 @@ export async function claimCacheRefresh(db, projectId, cacheKey, expectedExpires
   try {
     const now = Math.floor(Date.now() / 1000)
     const retainCutoff = now - METRICS_CACHE_RETENTION_SECONDS
-    const result = await db.execute(sql`
+    const result = await db.run(sql`
       UPDATE metrics_cache
       SET expires_at = MIN(
         ${now + Math.max(1, Number(leaseSeconds) || 30)},
@@ -175,7 +175,7 @@ export async function invalidateUserCache(db, projectId, unionId) {
   if (!db || !projectId || !unionId) return
   try {
     const { sql } = await import('drizzle-orm')
-    await db.execute(sql`
+    await db.run(sql`
       DELETE FROM metrics_cache
       WHERE project_id = ${projectId}
         AND cache_key LIKE ${'%:user:' + unionId + ':%'}

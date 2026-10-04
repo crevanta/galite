@@ -17,7 +17,7 @@ import { normalizeSteps, parseSteps, shapeStep, FUNNEL_NAME_MAX } from '../../..
 async function invalidateFunnelCache(db, projectId, funnelKey) {
   try {
     const { sql } = await import('drizzle-orm')
-    await db.execute(sql`
+    await db.run(sql`
       DELETE FROM metrics_cache
       WHERE project_id = ${projectId}
         AND cache_key LIKE ${'ga4:funnel:' + funnelKey + ':%'}
