@@ -702,5 +702,7 @@
   "api_docs.labels.search": "検索サマリー",
   "api_docs.labels.funnels": "ファネル一覧",
   "api_docs.labels.raw": "Raw GA4レポート",
-  "api_docs.labels.mcp": "MCPエンドポイント"
+  "api_docs.labels.mcp": "MCPエンドポイント",
+  "projects.metrics_updated_at": "データ更新日時：{time}",
+  "projects.metrics_updating": "バックグラウンドで更新中"
 }

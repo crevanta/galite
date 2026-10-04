@@ -702,5 +702,7 @@
   "api_docs.labels.search": "搜尋摘要",
   "api_docs.labels.funnels": "漏斗列表",
   "api_docs.labels.raw": "原生 GA4 報告",
-  "api_docs.labels.mcp": "MCP 端點"
+  "api_docs.labels.mcp": "MCP 端點",
+  "projects.metrics_updated_at": "資料更新於 {time}",
+  "projects.metrics_updating": "背景更新中"
 }

@@ -702,5 +702,7 @@
   "api_docs.labels.search": "Résumé Search",
   "api_docs.labels.funnels": "Lister les funnels",
   "api_docs.labels.raw": "Rapport GA4 brut",
-  "api_docs.labels.mcp": "Endpoint MCP"
+  "api_docs.labels.mcp": "Endpoint MCP",
+  "projects.metrics_updated_at": "Données mises à jour à {time}",
+  "projects.metrics_updating": "Mise à jour en arrière-plan"
 }

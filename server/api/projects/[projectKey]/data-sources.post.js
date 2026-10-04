@@ -10,6 +10,7 @@
  *   3) 同 (project_key, provider, resource_id) 已挂过 -> 直接返回原行
  * =================================================================== */
 
+import { invalidateUserCache } from '../../../utils/metrics-cache'
 import { and, eq } from 'drizzle-orm'
 import { project_data_source, data_source_auth } from '../../../database/schema'
 import { loadOwnedProject } from '../../../utils/project-access'
@@ -113,5 +114,7 @@ export default defineEventHandler(async (event) => {
   })
 
   const row = await findExisting(db, user, project.project_key, provider, input.resource_id)
+  await invalidateUserCache(db, user.project_id, user.union_id)
+
   return reqSuccess(shape(row))
 })

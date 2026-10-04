@@ -11,6 +11,8 @@
 /* ---- API 错误类型: 统一错误表示
        silent=true 表示业务侧不应 toast (典型: 401 未登录, layout 自动弹
        LoginModal, 不需要额外提示) ---- */
+import { projectSnapshotCache } from '~/utils/project-snapshot'
+
 export class ApiError extends Error {
   constructor(statusCode, message, data, silent = false) {
     super(message)
@@ -39,11 +41,16 @@ export function useApi() {
   async function request(url, method, body) {
 
     try {
-      return await requestFetch(url, {
+      const result = await requestFetch(url, {
         method,
         credentials: 'same-origin',
         body: body ?? undefined,
       })
+      if (method === 'POST' && result?.code === 200
+        && /^\/api\/(projects|data-sources)\//.test(url)) {
+        projectSnapshotCache().clear()
+      }
+      return result
     } catch (err) {
       /* ---- 错误路由: 按状态码分流处理 ---- */
       const statusCode = err?.statusCode

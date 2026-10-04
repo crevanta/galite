@@ -67,6 +67,11 @@
       </div>
     </div>
 
+    <p v-if="isLoggedIn && metricsUpdatedLabel" class="mt-3 text-xs text-gray-400" aria-live="polite">
+      {{ $t('projects.metrics_updated_at', { time: metricsUpdatedLabel }) }}
+      <span v-if="metricsUpdating"> · {{ $t('projects.metrics_updating') }}</span>
+    </p>
+
     <!-- ============ 加载骨架: 列表 OR 指标尚未就绪
          两种触发场景:
          1. !fetched         首次进入页面, 列表都没拉 → 默认 8 张单源骨架
@@ -169,7 +174,8 @@
         :search-sparkline-clicks="searchTotalsSparkClicks"
         :search-sparkline-impressions="searchTotalsSparkImpressions"
         :search-provider-metrics="searchProviderTotals"
-        :number-loading="isLoggedIn && (metricsLoading || searchLoading)"
+        :site-number-loading="isLoggedIn && metricsLoading"
+        :search-number-loading="isLoggedIn && searchLoading"
       />
       <SiteCard
         v-else-if="overviewMode === 'ga4'"
@@ -208,7 +214,8 @@
               :search-sparkline-clicks="searchProjectMap[p.project_key]?.sparkline_clicks || []"
               :search-sparkline-impressions="searchProjectMap[p.project_key]?.sparkline_impressions || []"
               :search-provider-metrics="searchProjectMap[p.project_key]?.providers || {}"
-              :number-loading="isLoggedIn && (metricsLoading || searchLoading)"
+              :site-number-loading="isLoggedIn && metricsLoading"
+              :search-number-loading="isLoggedIn && searchLoading"
               :show-install="(p.providers || []).includes('ga4')"
               :hide-names="hideNames"
               :index="idx"
@@ -534,6 +541,7 @@ import ProjectPublicSettings from '~/components/public/ProjectPublicSettings.vue
 import { stripLocalePrefix } from '~/utils/locale-path'
 import { buildCustomPeriod, parseCustomPeriod } from '~/utils/period'
 import { resolveProjectIcon } from '~/utils/project-icon'
+import { projectSnapshotCache, snapshotOwner } from '~/utils/project-snapshot'
 
 const { t, locale, locales } = useI18n()
 const localePath = useLocalePath()
@@ -855,59 +863,110 @@ watch(sortOptions, applySortForOptions, { immediate: true })
    一次 overview 请求拿全部: 各项目 metrics + 跨站 totals
    ============================================================ */
 
-async function fetchAllMetrics() {
-  metricsLoading.value = true
-  searchLoading.value = true
-  try {
-    /* GA4 + Search overview 并行: 单方失败不阻塞另一方
-       (没 GA4 项目时 GA4 接口正常返空; 没 Search 项目时 Search 接口正常返空, 自然不渲染 Search 区) */
-    const [resGa, resSearch] = await Promise.all([
-      fetchOverview(period.value).catch(() => null),
-      fetchOverviewSearch(period.value).catch(() => null),
-    ])
+let metricsRequestId = 0
+let metricsPollTimer
+const metricsUpdating = ref(false)
+const gaCachedAt = ref(0)
+const searchCachedAt = ref(0)
+const metricsUpdatedLabel = computed(() => {
+  const times = [gaCachedAt.value, searchCachedAt.value].filter(Boolean)
+  return times.length ? new Date(Math.min(...times) * 1000).toLocaleString(locale.value) : ''
+})
+onUnmounted(() => { metricsRequestId++; clearTimeout(metricsPollTimer) })
 
-    /* ---- GA4 入库 ---- */
-    if (resGa?.code === 200) {
-      const next = {}
-      const sparkNext = {}
-      for (const item of (resGa.data?.projects || [])) {
-        next[item.project_key]      = item.metrics || null
-        sparkNext[item.project_key] = Array.isArray(item.sparkline) ? item.sparkline : []
+function applyGaOverview(data) {
+  const next = {}, sparkNext = {}
+  for (const item of (data?.projects || [])) {
+    next[item.project_key] = item.metrics || null
+    sparkNext[item.project_key] = Array.isArray(item.sparkline) ? item.sparkline : []
+  }
+  metricsMap.value = next
+  sparklineMap.value = sparkNext
+  totals.value = data?.totals || null
+  totalsSparkline.value = Array.isArray(data?.sparkline) ? data.sparkline : []
+  gaCachedAt.value = data?.cached_at || 0
+}
+
+function applySearchOverview(data) {
+  searchProjects.value = data?.projects || []
+  searchTotals.value = data?.totals || null
+  searchProviderTotals.value = data?.provider_totals || {}
+  searchTotalsSparkClicks.value = Array.isArray(data?.sparkline_clicks) ? data.sparkline_clicks : []
+  searchTotalsSparkImpressions.value = Array.isArray(data?.sparkline_impressions) ? data.sparkline_impressions : []
+  searchCachedAt.value = data?.cached_at || 0
+}
+
+watch(isLoggedIn, loggedIn => {
+  if (!loggedIn) {
+    metricsRequestId++
+    clearTimeout(metricsPollTimer)
+    applyGaOverview(null)
+    applySearchOverview(null)
+    metricsFetched.value = false
+    metricsUpdating.value = false
+  }
+})
+
+async function fetchAllMetrics({ refresh = false, background = false, poll = 0, restore = false } = {}) {
+  const requestId = ++metricsRequestId
+  const requestedPeriod = period.value
+  const owner = isLoggedIn.value ? snapshotOwner(userStore.user) : ''
+  if (!owner) return
+  const snapshots = projectSnapshotCache()
+  const revision = snapshots.revision()
+  const current = () => requestId === metricsRequestId && isLoggedIn.value
+    && snapshotOwner(userStore.user) === owner
+    && period.value === requestedPeriod && snapshots.revision() === revision
+  clearTimeout(metricsPollTimer)
+  const saved = restore ? snapshots.read(owner, requestedPeriod) : null
+  if (!background) {
+    applyGaOverview(saved?.ga4)
+    applySearchOverview(saved?.search)
+    metricsLoading.value = !saved?.ga4
+    searchLoading.value = !saved?.search
+    metricsFetched.value = Boolean(saved)
+  }
+  // Restoring a snapshot is synchronous; revalidation never hides its cards.
+  metricsUpdating.value = true
+  let updating = false
+  await Promise.all([
+    fetchOverview(requestedPeriod, { refresh }).catch(() => null).then(resGa => {
+      if (!current()) return
+      if (resGa?.code === 200) {
+        if (!resGa.data?.partial || !gaCachedAt.value) applyGaOverview(resGa.data)
+        snapshots.write(owner, requestedPeriod, 'ga4', resGa.data, revision)
+      } else if (!background && !saved?.ga4) {
+        if (resGa) showToast(resGa?.msg || t('metrics.failed'), { type: 'error' })
+        applyGaOverview(null)
       }
-      metricsMap.value      = next
-      sparklineMap.value    = sparkNext
-      totals.value          = resGa.data?.totals || null
-      totalsSparkline.value = Array.isArray(resGa.data?.sparkline) ? resGa.data.sparkline : []
-    } else {
-      if (resGa) showToast(resGa?.msg || t('metrics.failed'), { type: 'error' })
-      metricsMap.value = {}; sparklineMap.value = {}
-      totals.value = null;   totalsSparkline.value = []
+      updating ||= Boolean(resGa?.data?.refreshing)
+      metricsLoading.value = false
+      metricsFetched.value = true
+    }),
+    fetchOverviewSearch(requestedPeriod, { refresh }).catch(() => null).then(resSearch => {
+      if (!current()) return
+      if (resSearch?.code === 200) {
+        if (!resSearch.data?.partial || !searchCachedAt.value) applySearchOverview(resSearch.data)
+        snapshots.write(owner, requestedPeriod, 'search', resSearch.data, revision)
+      } else if (!background && !saved?.search) {
+        applySearchOverview(null)
+      }
+      updating ||= Boolean(resSearch?.data?.refreshing)
+      searchLoading.value = false
+      metricsFetched.value = true
+    }),
+  ])
+  if (!current()) {
+    // A successful mutation invalidates both storage and in-flight UI responses.
+    if (requestId === metricsRequestId && isLoggedIn.value
+      && snapshotOwner(userStore.user) === owner && period.value === requestedPeriod) {
+      await fetchAllMetrics({ refresh: true })
     }
-
-    /* ---- Search 入库 (失败静默, 不打扰用户; 主体 GA4 已可见即可) ---- */
-    if (resSearch?.code === 200) {
-      searchProjects.value             = resSearch.data?.projects || []
-      searchTotals.value               = resSearch.data?.totals || null
-      searchProviderTotals.value       = resSearch.data?.provider_totals || {}
-      searchTotalsSparkClicks.value    = Array.isArray(resSearch.data?.sparkline_clicks) ? resSearch.data.sparkline_clicks : []
-      searchTotalsSparkImpressions.value = Array.isArray(resSearch.data?.sparkline_impressions) ? resSearch.data.sparkline_impressions : []
-    } else {
-      searchProjects.value = []; searchTotals.value = null
-      searchProviderTotals.value = {}
-      searchTotalsSparkClicks.value = []; searchTotalsSparkImpressions.value = []
-    }
-  } catch (err) {
-    if (!err?.silent) showToast(err?.message || t('metrics.failed'), { type: 'error' })
-    metricsMap.value = {}; sparklineMap.value = {}
-    totals.value = null;   totalsSparkline.value = []
-    searchProjects.value = []; searchTotals.value = null
-    searchProviderTotals.value = {}
-    searchTotalsSparkClicks.value = []; searchTotalsSparkImpressions.value = []
-  } finally {
-    metricsLoading.value = false
-    searchLoading.value = false
-    /* 无论成败都标记尝试过, 让首屏骨架结束 (失败时让主网格自己渲染空白卡, 不再卡在骨架) */
-    metricsFetched.value = true
+    return
+  }
+  metricsUpdating.value = updating
+  if (updating && poll < 12) {
+    metricsPollTimer = setTimeout(() => fetchAllMetrics({ background: true, poll: poll + 1 }), 5000)
   }
 }
 
@@ -1264,9 +1323,11 @@ async function manualRefresh() {
   if (refreshing.value) return
   refreshing.value = true
   try {
-    await fetchList()
-    await fetchDataSourceList().catch(() => null)
-    await fetchAllMetrics()
+    await Promise.all([
+      fetchList(),
+      fetchDataSourceList().catch(() => null),
+      fetchAllMetrics({ refresh: true, background: true }),
+    ])
   } finally {
     refreshing.value = false
   }
@@ -1279,7 +1340,7 @@ watch(period, async (v) => {
     router.replace({ query: { ...route.query, period: v } })
   }
   if (!periodHydrated) return
-  await fetchAllMetrics()
+  await fetchAllMetrics({ restore: true })
 })
 
 watch(() => route.query.period, (v) => {
@@ -1317,9 +1378,12 @@ onMounted(async () => {
     restoreSort(storedSort, storedSortPinned)
     return
   }
-  await fetchList()
-  await fetchDataSourceList().catch(() => null)
+  const revalidation = Promise.all([
+    fetched.value ? Promise.resolve() : fetchList(),
+    fetchDataSourceList().catch(() => null),
+    fetchAllMetrics({ restore: true }),
+  ])
   restoreSort(storedSort, storedSortPinned)
-  await fetchAllMetrics()
+  await revalidation
 })
 </script>

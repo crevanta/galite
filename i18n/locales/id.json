@@ -702,5 +702,7 @@
   "api_docs.labels.search": "Ringkasan pencarian",
   "api_docs.labels.funnels": "Daftar funnels",
   "api_docs.labels.raw": "Laporan GA4 raw",
-  "api_docs.labels.mcp": "Endpoint MCP"
+  "api_docs.labels.mcp": "Endpoint MCP",
+  "projects.metrics_updated_at": "Data diperbarui pada {time}",
+  "projects.metrics_updating": "Memperbarui di latar belakang"
 }

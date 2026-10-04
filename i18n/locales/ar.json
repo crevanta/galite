@@ -702,5 +702,7 @@
   "api_docs.labels.search": "ملخص البحث",
   "api_docs.labels.funnels": "قائمة المسارات",
   "api_docs.labels.raw": "تقرير GA4 خام",
-  "api_docs.labels.mcp": "نقطة نهاية MCP"
+  "api_docs.labels.mcp": "نقطة نهاية MCP",
+  "projects.metrics_updated_at": "تم تحديث البيانات في {time}",
+  "projects.metrics_updating": "جارٍ التحديث في الخلفية"
 }

@@ -702,5 +702,7 @@
   "api_docs.labels.search": "خلاصه جستجو",
   "api_docs.labels.funnels": "فهرست قیف‌ها",
   "api_docs.labels.raw": "گزارش خام GA4",
-  "api_docs.labels.mcp": "Endpoint MCP"
+  "api_docs.labels.mcp": "Endpoint MCP",
+  "projects.metrics_updated_at": "آخرین به‌روزرسانی داده‌ها: {time}",
+  "projects.metrics_updating": "در حال به‌روزرسانی در پس‌زمینه"
 }

@@ -143,6 +143,43 @@ pnpm db:migrate:remote
 pnpm deploy
 ```
 
+## Dashboard overview caching
+
+GA4 and Search overview responses are fresh for five minutes. A complete snapshot
+can remain visible for up to 24 hours while a background request updates it. Manual
+refresh bypasses the fresh-cache check. Concurrent requests in the same Worker
+instance share work; separate Worker instances can rebuild independently. Partial
+or failed provider responses do not overwrite a complete cached snapshot.
+
+Overview invalidation uses a persistent project-scoped version in D1. Invalidation
+increments that version and deletes the user's overview rows in one batch. A
+rebuild can write only if its version still matches, including when the cache was
+initially empty. Version records are not removed by the metrics-cache cleanup job.
+An invalidated foreground request retries with fresh inputs, up to three attempts.
+
+The browser also stores up to eight period snapshots in localStorage, isolated by
+account and expired using the original data timestamp. Logout, account changes,
+OAuth reconnects, and successful project/data-source mutations invalidate them.
+Partial results are not persisted. If browser storage is unavailable, the dashboard
+continues to use live requests. The dashboard displays the data timestamp and a
+background-update indicator, with independent loading states for GA4 and Search.
+
+**Upgrade:** apply the new D1 migration before deploying this version:
+
+```bash
+pnpm db:migrate:remote
+pnpm build
+```
+
+The migration only adds `metrics_cache_versions`; existing analytics and cached
+rows are preserved. It is required even when the metrics cache is empty. Local
+verification (isolated Miniflare D1; no production credentials needed):
+
+```bash
+pnpm build
+node --test tests/*.test.mjs
+```
+
 ## License
 
 GA Lite is distributed under the [GNU Affero General Public License v3.0](./LICENSE).

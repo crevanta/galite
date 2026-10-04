@@ -702,5 +702,7 @@
   "api_docs.labels.search": "Search summary",
   "api_docs.labels.funnels": "Funnels list",
   "api_docs.labels.raw": "Raw GA4 report",
-  "api_docs.labels.mcp": "MCP endpoint"
+  "api_docs.labels.mcp": "MCP endpoint",
+  "projects.metrics_updated_at": "ڈیٹا کی تازہ کاری کا وقت: {time}",
+  "projects.metrics_updating": "پس منظر میں تازہ کاری جاری ہے"
 }

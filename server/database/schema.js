@@ -213,3 +213,9 @@ export const instance_config = sqliteTable('instance_config', {
   created_at: timestampColumn('created_at'),
   updated_at: timestampColumn('updated_at'),
 })
+
+// Overview invalidation must survive empty caches and separate Worker instances.
+export const metrics_cache_versions = sqliteTable('metrics_cache_versions', {
+  project_id: text('project_id').primaryKey(),
+  version: integer('version').notNull().default(0),
+})

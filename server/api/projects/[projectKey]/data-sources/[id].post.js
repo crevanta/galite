@@ -6,6 +6,7 @@
  * 不影响 data_source_auth (其他项目可能仍在使用同一授权账号).
  * =================================================================== */
 
+import { invalidateUserCache } from '../../../../utils/metrics-cache'
 import { and, eq } from 'drizzle-orm'
 import { project_data_source } from '../../../../database/schema'
 import { loadOwnedProject } from '../../../../utils/project-access'
@@ -29,6 +30,8 @@ export default defineEventHandler(async (event) => {
       eq(project_data_source.union_id,   user.union_id),
       eq(project_data_source.project_key, project.project_key),
     ))
+
+  await invalidateUserCache(db, user.project_id, user.union_id)
 
   return reqSuccess(null, 'unmounted')
 })

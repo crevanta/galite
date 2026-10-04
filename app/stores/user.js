@@ -5,6 +5,7 @@
    =========================================================== */
 
 import { defineStore } from 'pinia'
+import { projectSnapshotCache, snapshotOwner } from '~/utils/project-snapshot'
 
 export const useUserStore = defineStore('user', () => {
 
@@ -33,12 +34,14 @@ export const useUserStore = defineStore('user', () => {
 
   /* ---- 写入用户数据 ---- */
   function setUser(data) {
+    if (user.value && snapshotOwner(user.value) !== snapshotOwner(data)) projectSnapshotCache().clear()
     user.value = data
     isLoggedIn.value = true
   }
 
   /* ---- 清空用户态 ---- */
   function clearUser() {
+    projectSnapshotCache().clear()
     user.value = null
     isLoggedIn.value = false
   }

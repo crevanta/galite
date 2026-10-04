@@ -702,5 +702,7 @@
   "api_docs.labels.search": "Tóm tắt tìm kiếm",
   "api_docs.labels.funnels": "Danh sách phễu",
   "api_docs.labels.raw": "Báo cáo GA4 raw",
-  "api_docs.labels.mcp": "MCP endpoint"
+  "api_docs.labels.mcp": "MCP endpoint",
+  "projects.metrics_updated_at": "Dữ liệu được cập nhật lúc {time}",
+  "projects.metrics_updating": "Đang cập nhật trong nền"
 }

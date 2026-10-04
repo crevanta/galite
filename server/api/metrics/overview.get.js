@@ -12,7 +12,7 @@
  *   }
  *
  * 缓存 key = ga4:user:{union_id}:{period}:overview
- * TTL    = 60s
+ * TTL    = 5 minutes; stale snapshots refresh in the background
  *
  * 失败容忍:
  *   - 单个 ds 任何错误 (503/401/其它) 都只 log + 跳过, 不让整个 overview 失败
@@ -22,12 +22,13 @@
 
 import { and, eq, inArray } from 'drizzle-orm'
 import { project_list, project_data_source, data_source_auth } from '../../database/schema'
-import { DataSourceProvider, MetricsPeriod, RecordStatus, METRICS_CACHE_TTL_MS } from '../../utils/constants'
+import { DataSourceProvider, MetricsPeriod, RecordStatus } from '../../utils/constants'
 import { isValidPeriod } from '../../utils/period'
 import { selectInBatches, useDb } from '../../utils/db'
 import { getAccessToken } from '../../utils/data-source-token'
 import { runReport, periodToRange, extractTotals, extractRows, aggregateMetrics } from '../../utils/providers/ga4'
-import { readCache, writeCache, buildCacheKey } from '../../utils/metrics-cache'
+import { buildCacheKey } from '../../utils/metrics-cache'
+import { loadOverviewCache } from '../../utils/overview-cache'
 import { getJwtSecret, getSiteConfig, markAuthInvalid } from '../../utils/metrics-helpers'
 import { mapLimit } from '../../utils/map-limit'
 import { addTimelinePoint, collectTimelineLabels, mergeTimeline, timelineValues } from '../../utils/sparkline'
@@ -95,128 +96,129 @@ export default defineEventHandler(async (event) => {
   const siteConfig = getSiteConfig(event)
 
   const cacheKey = buildCacheKey(['ga4', 'user', user.union_id, 'all', period, 'overview'])
-  const ttlSec = Math.floor(METRICS_CACHE_TTL_MS / 1000)
+  const build = async () => {
 
-  const cached = await readCache(db, user.project_id, cacheKey)
-  if (cached) return reqSuccess(cached)
-
-  /* ---- 先拉所有挂 GA4 的数据源 (按 project_data_source.provider=ga4 反查)
-          再用 projectKeys IN 查 project_list, 只返"挂了 GA4 的项目"
-          形态对称 overview/gsc.get.js, 避免 GSC-only 项目出现空白 GA4 卡 ---- */
-  const range = periodToRange(period)
-  const allDsRows = await db.select().from(project_data_source)
-    .where(and(
-      eq(project_data_source.project_id, user.project_id),
-      eq(project_data_source.union_id, user.union_id),
-      eq(project_data_source.provider, DataSourceProvider.GA4),
-      eq(project_data_source.status, RecordStatus.ACTIVE),
-    ))
-  const dsRows = allDsRows
-
-  if (!dsRows.length) {
-    const empty = { period, projects: [], totals: pickOutput({}), sparkline: [] }
-    await writeCache(db, user.project_id, cacheKey, empty, ttlSec)
-    return reqSuccess(empty)
-  }
-
-  /* ---- 项目元信息: 仅查 dsRows 涉及的 projectKeys ---- */
-  const projectKeys = Array.from(new Set(dsRows.map((d) => d.project_key)))
-  const projects = await selectInBatches(projectKeys, (keys) => db.select().from(project_list)
-    .where(and(
-      eq(project_list.project_id, user.project_id),
-      eq(project_list.union_id, user.union_id),
-      inArray(project_list.project_key, keys),
-      eq(project_list.status, RecordStatus.ACTIVE),
-    )))
-  const projectByKey = new Map(projects.map((p) => [p.project_key, p]))
-  const orderedProjects = projectKeys.map((pk) => projectByKey.get(pk)).filter(Boolean)
-
-  if (!orderedProjects.length) {
-    const empty = { period, projects: [], totals: pickOutput({}), sparkline: [] }
-    await writeCache(db, user.project_id, cacheKey, empty, ttlSec)
-    return reqSuccess(empty)
-  }
-
-  /* ---- 授权与 token 去重: 多个 property 共用一个 Google auth 时只查库/解密/刷新一次 ---- */
-  const authIds = Array.from(new Set(dsRows.map((d) => d.auth_id).filter(Boolean)))
-  const authRows = authIds.length
-    ? await selectInBatches(authIds, (ids) => db.select().from(data_source_auth)
+    /* ---- 先拉所有挂 GA4 的数据源 (按 project_data_source.provider=ga4 反查)
+            再用 projectKeys IN 查 project_list, 只返"挂了 GA4 的项目"
+            形态对称 overview/gsc.get.js, 避免 GSC-only 项目出现空白 GA4 卡 ---- */
+    const range = periodToRange(period)
+    const allDsRows = await db.select().from(project_data_source)
       .where(and(
-        eq(data_source_auth.project_id, user.project_id),
-        eq(data_source_auth.union_id, user.union_id),
-        inArray(data_source_auth.id, ids),
-        eq(data_source_auth.status, RecordStatus.ACTIVE),
+        eq(project_data_source.project_id, user.project_id),
+        eq(project_data_source.union_id, user.union_id),
+        eq(project_data_source.provider, DataSourceProvider.GA4),
+        eq(project_data_source.status, RecordStatus.ACTIVE),
+      ))
+    const dsRows = allDsRows
+
+    if (!dsRows.length) {
+      const empty = { period, projects: [], totals: pickOutput({}), sparkline: [] }
+      return empty
+    }
+
+    /* ---- 项目元信息: 仅查 dsRows 涉及的 projectKeys ---- */
+    const projectKeys = Array.from(new Set(dsRows.map((d) => d.project_key)))
+    const projects = await selectInBatches(projectKeys, (keys) => db.select().from(project_list)
+      .where(and(
+        eq(project_list.project_id, user.project_id),
+        eq(project_list.union_id, user.union_id),
+        inArray(project_list.project_key, keys),
+        eq(project_list.status, RecordStatus.ACTIVE),
       )))
-    : []
-  const authById = new Map(authRows.map((a) => [a.id, a]))
-  const tokenByAuthId = new Map()
+    const projectByKey = new Map(projects.map((p) => [p.project_key, p]))
+    const orderedProjects = projectKeys.map((pk) => projectByKey.get(pk)).filter(Boolean)
 
-  await mapLimit(authRows, GA4_OVERVIEW_CONCURRENCY, async (auth) => {
-    tokenByAuthId.set(auth.id, await resolveAccessToken(db, auth, jwtSecret, siteConfig))
-  })
+    if (!orderedProjects.length) {
+      const empty = { period, projects: [], totals: pickOutput({}), sparkline: [] }
+      return empty
+    }
 
-  /* ---- 全 ds 并发跑 GA4 (单失败不阻塞其他)
-          每个返回 { totals, sparkline }; 同项目多 ds 时聚合阶段一并合并 ---- */
-  const spec = sparklineSpec(period)
-  const totalsByProject    = new Map() /* project_key -> [totals, ...] */
-  const sparklineByProject = new Map() /* project_key -> Map<time_key, metrics> */
-  for (const proj of orderedProjects) {
-    totalsByProject.set(proj.project_key, [])
-    sparklineByProject.set(proj.project_key, new Map())
+    /* ---- 授权与 token 去重: 多个 property 共用一个 Google auth 时只查库/解密/刷新一次 ---- */
+    const authIds = Array.from(new Set(dsRows.map((d) => d.auth_id).filter(Boolean)))
+    const authRows = authIds.length
+      ? await selectInBatches(authIds, (ids) => db.select().from(data_source_auth)
+        .where(and(
+          eq(data_source_auth.project_id, user.project_id),
+          eq(data_source_auth.union_id, user.union_id),
+          inArray(data_source_auth.id, ids),
+          eq(data_source_auth.status, RecordStatus.ACTIVE),
+        )))
+      : []
+    const authById = new Map(authRows.map((a) => [a.id, a]))
+    const tokenByAuthId = new Map()
+
+    await mapLimit(authRows, GA4_OVERVIEW_CONCURRENCY, async (auth) => {
+      tokenByAuthId.set(auth.id, await resolveAccessToken(db, auth, jwtSecret, siteConfig))
+    })
+
+    /* ---- 全 ds 并发跑 GA4 (单失败不阻塞其他)
+            每个返回 { totals, sparkline }; 同项目多 ds 时聚合阶段一并合并 ---- */
+    const spec = sparklineSpec(period)
+    const totalsByProject    = new Map() /* project_key -> [totals, ...] */
+    const sparklineByProject = new Map() /* project_key -> Map<time_key, metrics> */
+    for (const proj of orderedProjects) {
+      totalsByProject.set(proj.project_key, [])
+      sparklineByProject.set(proj.project_key, new Map())
+    }
+
+    let failedSources = 0
+    await mapLimit(dsRows, GA4_OVERVIEW_CONCURRENCY, async (ds) => {
+      const auth = authById.get(ds.auth_id)
+      const accessToken = tokenByAuthId.get(ds.auth_id)
+      const result = await fetchOneTotals(db, ds, auth, accessToken, range, spec)
+      if (!result) { failedSources++; return }
+      if (!totalsByProject.has(ds.project_key)) return
+      totalsByProject.get(ds.project_key).push(result.totals)
+      mergeTimeline(sparklineByProject.get(ds.project_key), result.sparkline)
+    })
+
+    /* ---- 所有项目先共用同一时间轴，再补 0 / 分桶 ---- */
+    const sparklineLabels = collectTimelineLabels(sparklineByProject.values())
+    const projectSparkline = (projectKey) => timelineValues(
+      sparklineByProject.get(projectKey),
+      sparklineLabels,
+      'screenPageViews',
+      spec.bucketDays,
+    )
+
+    /* ---- 按项目聚合 ---- */
+    const out = orderedProjects.map((proj) => ({
+      project_key: proj.project_key,
+      name:        proj.name,
+      logo_url:    proj.logo_url || '',
+      site_url:    proj.site_url || '',
+      metrics:     pickOutput(aggregateMetrics(totalsByProject.get(proj.project_key) || [])),
+      sparkline:   projectSparkline(proj.project_key),
+    }))
+
+    /* ---- 跨项目 totals + sparkline 累加 ---- */
+    const allTotals = []
+    for (const arr of totalsByProject.values()) allTotals.push(...arr)
+    const totals = pickOutput(aggregateMetrics(allTotals))
+
+    const totalTimeline = new Map()
+    for (const timeline of sparklineByProject.values()) mergeTimeline(totalTimeline, timeline)
+    const totalSparkline = timelineValues(
+      totalTimeline,
+      sparklineLabels,
+      'screenPageViews',
+      spec.bucketDays,
+    )
+
+    const payload = { period, projects: out, totals, sparkline: totalSparkline, partial: failedSources > 0 }
+    console.info('[metrics/overview] cache_miss_done:', {
+      period,
+      ds_count: dsRows.length,
+      project_count: orderedProjects.length,
+      auth_count: authRows.length,
+      ms: Date.now() - startedAt,
+    })
+    return payload
   }
-
-  await mapLimit(dsRows, GA4_OVERVIEW_CONCURRENCY, async (ds) => {
-    const auth = authById.get(ds.auth_id)
-    const accessToken = tokenByAuthId.get(ds.auth_id)
-    const result = await fetchOneTotals(db, ds, auth, accessToken, range, spec)
-    if (!result || !totalsByProject.has(ds.project_key)) return
-    totalsByProject.get(ds.project_key).push(result.totals)
-    mergeTimeline(sparklineByProject.get(ds.project_key), result.sparkline)
-  })
-
-  /* ---- 所有项目先共用同一时间轴，再补 0 / 分桶 ---- */
-  const sparklineLabels = collectTimelineLabels(sparklineByProject.values())
-  const projectSparkline = (projectKey) => timelineValues(
-    sparklineByProject.get(projectKey),
-    sparklineLabels,
-    'screenPageViews',
-    spec.bucketDays,
-  )
-
-  /* ---- 按项目聚合 ---- */
-  const out = orderedProjects.map((proj) => ({
-    project_key: proj.project_key,
-    name:        proj.name,
-    logo_url:    proj.logo_url || '',
-    site_url:    proj.site_url || '',
-    metrics:     pickOutput(aggregateMetrics(totalsByProject.get(proj.project_key) || [])),
-    sparkline:   projectSparkline(proj.project_key),
+  return reqSuccess(await loadOverviewCache({
+    event, db, projectId: user.project_id, cacheKey,
+    refresh: query.refresh === '1', build,
   }))
-
-  /* ---- 跨项目 totals + sparkline 累加 ---- */
-  const allTotals = []
-  for (const arr of totalsByProject.values()) allTotals.push(...arr)
-  const totals = pickOutput(aggregateMetrics(allTotals))
-
-  const totalTimeline = new Map()
-  for (const timeline of sparklineByProject.values()) mergeTimeline(totalTimeline, timeline)
-  const totalSparkline = timelineValues(
-    totalTimeline,
-    sparklineLabels,
-    'screenPageViews',
-    spec.bucketDays,
-  )
-
-  const payload = { period, projects: out, totals, sparkline: totalSparkline }
-  await writeCache(db, user.project_id, cacheKey, payload, ttlSec)
-  console.info('[metrics/overview] cache_miss_done:', {
-    period,
-    ds_count: dsRows.length,
-    project_count: orderedProjects.length,
-    auth_count: authRows.length,
-    ms: Date.now() - startedAt,
-  })
-  return reqSuccess(payload)
 })
 
 /* ===================================================================

@@ -702,5 +702,7 @@
   "api_docs.labels.search": "สรุปการค้นหา",
   "api_docs.labels.funnels": "รายการ funnels",
   "api_docs.labels.raw": "รายงาน GA4 raw",
-  "api_docs.labels.mcp": "MCP endpoint"
+  "api_docs.labels.mcp": "MCP endpoint",
+  "projects.metrics_updated_at": "อัปเดตข้อมูลเมื่อ {time}",
+  "projects.metrics_updating": "กำลังอัปเดตในเบื้องหลัง"
 }

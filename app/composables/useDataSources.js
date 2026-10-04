@@ -6,6 +6,8 @@
    核心: 跨页面共享 list 状态, MountResourceModal 与 data-sources 页同源
    =========================================================== */
 
+import { projectSnapshotCache } from '~/utils/project-snapshot'
+
 export function useDataSources() {
 
   const api = useApi()
@@ -51,6 +53,7 @@ export function useDataSources() {
     const target = returnTo || window.location.pathname
     const params = new URLSearchParams({ return_to: target })
     if (mode === 'extended') params.set('mode', 'extended')
+    projectSnapshotCache().clear()
     window.location.href = `/api/data-sources/oauth/${provider}?${params.toString()}`
   }
 

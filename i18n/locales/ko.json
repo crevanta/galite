@@ -702,5 +702,7 @@
   "api_docs.labels.search": "검색 요약",
   "api_docs.labels.funnels": "퍼널 목록",
   "api_docs.labels.raw": "Raw GA4 리포트",
-  "api_docs.labels.mcp": "MCP endpoint"
+  "api_docs.labels.mcp": "MCP endpoint",
+  "projects.metrics_updated_at": "데이터 업데이트: {time}",
+  "projects.metrics_updating": "백그라운드에서 업데이트 중"
 }

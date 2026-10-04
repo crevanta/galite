@@ -6,6 +6,7 @@
  *             priority, realtime_dashboard }
  * =================================================================== */
 
+import { invalidateUserCache } from '../../../utils/metrics-cache'
 import { and, eq, ne } from 'drizzle-orm'
 import { project_list } from '../../../database/schema'
 import { loadOwnedProject } from '../../../utils/project-access'
@@ -111,6 +112,8 @@ export default defineEventHandler(async (event) => {
       return { status: 'error' }
     })
   }
+
+  await invalidateUserCache(db, user.project_id, user.union_id)
 
   return reqSuccess({ ga4_sync: ga4Sync }, 'updated')
 })

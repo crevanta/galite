@@ -16,6 +16,7 @@
 import { and, eq, like, lte, or, sql } from 'drizzle-orm'
 import { metrics_cache } from '../database/schema'
 import { getFirst } from './db'
+import { advanceOverviewVersion } from './overview-cache-version'
 
 export const METRICS_CACHE_RETENTION_SECONDS = 24 * 60 * 60
 export const CONSUMER_STALE_TTL_SECONDS = METRICS_CACHE_RETENTION_SECONDS
@@ -56,6 +57,7 @@ export async function readCacheEntry(db, projectId, cacheKey, options = {}) {
       payload: parsePayload(row),
       state: expiresAt > now ? 'hit' : 'stale',
       expiresAt,
+      updatedAt: Number(row.updated_at) || 0,
     }
   } catch (err) {
     console.error('[metrics-cache] readCache error:', err?.message || err)
@@ -169,20 +171,19 @@ export async function purgeExpiredMetricsCache(db, now = Math.floor(Date.now() /
  *           导致用户断开 GSC 后切回 /projects 还能看到旧 GSC 数据.
  *           改用中段匹配 '%:user:{union_id}:%' 覆盖任意 provider.
  *
- *  失败不抛 (缓存失败永远不应阻塞业务)
+ *  用户级失效必须成功: 版本更新失败时向调用方返回错误, 防止静默保留旧总览。
  * =================================================================== */
 export async function invalidateUserCache(db, projectId, unionId) {
   if (!db || !projectId || !unionId) return
-  try {
-    const { sql } = await import('drizzle-orm')
-    await db.execute(sql`
-      DELETE FROM metrics_cache
-      WHERE project_id = ${projectId}
-        AND cache_key LIKE ${'%:user:' + unionId + ':%'}
-    `)
-  } catch (err) {
-    console.error('[metrics-cache] invalidateUserCache error:', err?.message || err)
-  }
+  // D1 executes the version change and deletion in one transaction. An old
+  // in-flight rebuild cannot write after this batch, even on another Worker.
+  await db.batch([
+    advanceOverviewVersion(db, projectId),
+    db.delete(metrics_cache).where(and(
+      eq(metrics_cache.project_id, projectId),
+      like(metrics_cache.cache_key, `%:user:${unionId}:%`),
+    )),
+  ])
 }
 
 /* ---- 按项目清缓存 (覆盖 ga4 + gsc 项目级 cache) ---- */

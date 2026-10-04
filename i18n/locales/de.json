@@ -702,5 +702,7 @@
   "api_docs.labels.search": "Suchübersicht",
   "api_docs.labels.funnels": "Funnels auflisten",
   "api_docs.labels.raw": "Raw-GA4-Bericht",
-  "api_docs.labels.mcp": "MCP-Endpunkt"
+  "api_docs.labels.mcp": "MCP-Endpunkt",
+  "projects.metrics_updated_at": "Daten aktualisiert: {time}",
+  "projects.metrics_updating": "Aktualisierung im Hintergrund"
 }

@@ -239,8 +239,8 @@ export function useGlobalMetrics() {
 
   const api = useApi()
 
-  async function fetchOverview(period = '7days') {
-    return await api.get(`/api/metrics/overview${buildQuery({ period })}`)
+  async function fetchOverview(period = '7days', { refresh = false } = {}) {
+    return await api.get(`/api/metrics/overview${buildQuery({ period, refresh: refresh ? '1' : undefined })}`)
   }
 
   /* GSC 全站点摘要: 仅返"有 GSC 数据源"的项目 + 跨站 totals + 双线 sparkline */
@@ -252,8 +252,8 @@ export function useGlobalMetrics() {
     return await api.get(`/api/metrics/overview/bing${buildQuery({ period })}`)
   }
 
-  async function fetchOverviewSearch(period = '7days') {
-    return await api.get(`/api/metrics/overview/search${buildQuery({ period })}`)
+  async function fetchOverviewSearch(period = '7days', { refresh = false } = {}) {
+    return await api.get(`/api/metrics/overview/search${buildQuery({ period, refresh: refresh ? '1' : undefined })}`)
   }
 
   async function fetchRealtimeAll(period = '30min') {

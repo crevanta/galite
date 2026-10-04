@@ -702,5 +702,7 @@
   "api_docs.labels.search": "Qidiruv xulosasi",
   "api_docs.labels.funnels": "Funnels ro‘yxati",
   "api_docs.labels.raw": "Raw GA4 hisoboti",
-  "api_docs.labels.mcp": "MCP endpoint"
+  "api_docs.labels.mcp": "MCP endpoint",
+  "projects.metrics_updated_at": "Maʼlumotlar yangilangan vaqt: {time}",
+  "projects.metrics_updating": "Orqa fonda yangilanmoqda"
 }

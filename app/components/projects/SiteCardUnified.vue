@@ -23,6 +23,8 @@ const props = defineProps({
 
   loading:       { type: Boolean, default: false },
   numberLoading: { type: Boolean, default: false },
+  siteNumberLoading: { type: Boolean, default: false },
+  searchNumberLoading: { type: Boolean, default: false },
   showInstall:   { type: Boolean, default: true },
   hideNames:     { type: Boolean, default: false },
   index:         { type: Number,  default: 0 },
@@ -219,14 +221,14 @@ const detailLink = computed(() => isOverview.value ? null : localePath(`/project
           <div v-for="m in siteCards" :key="m.key" class="min-w-0 text-center">
             <div class="mb-0.5 truncate text-xs" :style="m.labelColor ? { color: m.labelColor } : { color: '#6b7280' }">{{ m.label }}</div>
             <div class="text-base font-semibold tabular-nums leading-6">
-              <div v-if="loading || numberLoading" class="mx-auto h-6 w-12 animate-pulse rounded bg-gray-200" />
+              <div v-if="loading || numberLoading || siteNumberLoading" class="mx-auto h-6 w-12 animate-pulse rounded bg-gray-200" />
               <span v-else-if="!m.has" class="text-gray-300">-</span>
               <span v-else class="text-gray-900">{{ m.display }}</span>
             </div>
           </div>
         </div>
         <div class="pt-1">
-          <MiniSparkline :points="siteSparkline" :loading="loading || numberLoading" :height="28" />
+          <MiniSparkline :points="siteSparkline" :loading="loading || numberLoading || siteNumberLoading" :height="28" />
         </div>
       </div>
 
@@ -235,14 +237,14 @@ const detailLink = computed(() => isOverview.value ? null : localePath(`/project
           <div v-for="m in searchCards" :key="m.key" class="min-w-0 text-center">
             <div class="mb-0.5 truncate text-xs" :style="m.labelColor ? { color: m.labelColor } : { color: '#6b7280' }">{{ m.label }}</div>
             <div class="text-base font-semibold tabular-nums leading-6">
-              <div v-if="loading || numberLoading" class="mx-auto h-6 w-12 animate-pulse rounded bg-gray-200" />
+              <div v-if="loading || numberLoading || searchNumberLoading" class="mx-auto h-6 w-12 animate-pulse rounded bg-gray-200" />
               <span v-else-if="!m.has" class="text-gray-300">-</span>
               <span v-else class="text-gray-900" v-tooltip="providerMetricTooltip(m.key)">{{ m.display }}</span>
             </div>
           </div>
         </div>
         <div class="pt-1">
-          <MiniSparkline :series="searchSparklineSeries" :loading="loading || numberLoading" :height="28" />
+          <MiniSparkline :series="searchSparklineSeries" :loading="loading || numberLoading || searchNumberLoading" :height="28" />
         </div>
       </div>
     </div>
