@@ -1,5 +1,5 @@
 /* ===================================================================
- * /.well-known/oauth-protected-resource - RFC 9728
+ * /.well-known/oauth-protected-resource - RFC 9728 (registered in nuxt.config.js)
  *
  * MCP client 在收到 401+WWW-Authenticate 后, 第一站会拉这里:
  *   - resource              : 受保护资源的 URL (即 MCP endpoint)

@@ -1,5 +1,5 @@
 /* ===================================================================
- * /.well-known/oauth-authorization-server - RFC 8414
+ * /.well-known/oauth-authorization-server - RFC 8414 (registered in nuxt.config.js)
  *
  * MCP client (尤其 Claude Desktop / Cursor) 拿到这份 metadata 后, 自动:
  *   1. POST registration_endpoint 注册 client_id (Dynamic Client Registration)

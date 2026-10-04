@@ -59,6 +59,20 @@ export default defineNuxtConfig({
   ssr: true,
   nitro: {
     preset: 'cloudflare-module',
+    // Keep discovery handlers outside dot-directories so deployment packaging
+    // cannot silently omit them. Explicit handlers also fail the build if missing.
+    handlers: [
+      {
+        route: '/.well-known/oauth-protected-resource',
+        method: 'get',
+        handler: resolve(process.cwd(), 'server/handlers/mcp/oauth-protected-resource.get.js'),
+      },
+      {
+        route: '/.well-known/oauth-authorization-server',
+        method: 'get',
+        handler: resolve(process.cwd(), 'server/handlers/mcp/oauth-authorization-server.get.js'),
+      },
+    ],
     esbuild: { options: { target: 'es2022' } },
     alias: { 'safer-buffer': 'node:buffer' },
     /* Provider 适配器共享统一接口名，只显式注册，不扫描成全局 auto-import。 */
