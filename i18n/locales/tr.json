@@ -702,5 +702,7 @@
   "api_docs.labels.search": "Arama özeti",
   "api_docs.labels.funnels": "Hunileri listele",
   "api_docs.labels.raw": "Raw GA4 raporu",
-  "api_docs.labels.mcp": "MCP endpoint"
+  "api_docs.labels.mcp": "MCP endpoint",
+  "integrations.ga4_admin_api_disabled": "Bu OAuth istemcisinin ait olduğu Google Cloud projesinde Google Analytics Admin API hizmetini etkinleştirin, birkaç dakika bekleyin ve yeniden senkronize edin.",
+  "integrations.gsc_api_disabled": "Bu OAuth istemcisinin ait olduğu Google Cloud projesinde Google Search Console API hizmetini etkinleştirin, birkaç dakika bekleyin ve yeniden senkronize edin."
 }

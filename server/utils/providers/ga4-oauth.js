@@ -14,6 +14,7 @@
  * =================================================================== */
 
 import { mapLimit } from '../map-limit'
+import { googleApiErrorCode } from '../google-api-error'
 
 const ENDPOINT_AUTH = 'https://accounts.google.com/o/oauth2/v2/auth'
 const ENDPOINT_TOKEN = 'https://oauth2.googleapis.com/token'
@@ -175,7 +176,7 @@ function throwAdminError(status, text = '') {
     throw createError({ statusCode: 401, message: 'token_invalid', data: text.slice(0, 200) })
   }
   if (status === 403) {
-    throw createError({ statusCode: 403, message: 'ga4_permission_denied', data: text.slice(0, 200) })
+    throw createError({ statusCode: 403, message: googleApiErrorCode(text, 'ga4_permission_denied') })
   }
   throw createError({ statusCode: status, message: 'ga4_admin_error', data: text.slice(0, 200) })
 }

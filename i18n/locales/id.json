@@ -702,5 +702,7 @@
   "api_docs.labels.search": "Ringkasan pencarian",
   "api_docs.labels.funnels": "Daftar funnels",
   "api_docs.labels.raw": "Laporan GA4 raw",
-  "api_docs.labels.mcp": "Endpoint MCP"
+  "api_docs.labels.mcp": "Endpoint MCP",
+  "integrations.ga4_admin_api_disabled": "Aktifkan Google Analytics Admin API di project Google Cloud pemilik klien OAuth ini, tunggu beberapa menit, lalu sinkronkan kembali.",
+  "integrations.gsc_api_disabled": "Aktifkan Google Search Console API di project Google Cloud pemilik klien OAuth ini, tunggu beberapa menit, lalu sinkronkan kembali."
 }

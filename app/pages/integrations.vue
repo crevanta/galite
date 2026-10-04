@@ -534,8 +534,13 @@ async function onSync(auth) {
         refetchProjects().catch(() => {}),  /* 失败静默, 不阻塞 sync 成功反馈 */
       ])
     } else {
-      const message = res?.msg === 'sync_incomplete'
-        ? t('integrations.sync_failed')
+      const syncErrors = {
+        sync_incomplete: 'integrations.sync_failed',
+        ga4_admin_api_disabled: 'integrations.ga4_admin_api_disabled',
+        gsc_api_disabled: 'integrations.gsc_api_disabled',
+      }
+      const message = syncErrors[res?.msg]
+        ? t(syncErrors[res.msg])
         : (res?.msg || t('integrations.sync_failed'))
       showToast(message, { type: 'error' })
     }

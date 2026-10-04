@@ -22,6 +22,7 @@ import { providerOf } from './providers'
 import { getProviderCredential } from './data-source-token'
 import { RecordStatus } from './constants'
 import { getAppSecret } from './self-hosted'
+import { publicSyncErrorCode } from './google-api-error'
 
 /* ===== 取 properties ===== */
 async function fetchProperties(db, authRow, event) {
@@ -258,6 +259,7 @@ export async function syncPropertiesAsProjects({ db, event, authRow, user, overw
   } catch (e) {
     console.error('[auto-sync] listProperties failed:', e?.message)
     return {
+      error: publicSyncErrorCode(e),
       complete: false,
       created: 0,
       updated: 0,
@@ -481,6 +483,7 @@ export async function syncSitesAsLinks({ db, event, authRow, user }) {
   } catch (e) {
     console.error('[auto-sync gsc] listSites failed:', e?.message)
     return {
+      error: publicSyncErrorCode(e),
       complete: false,
       created: 0,
       updated: 0,

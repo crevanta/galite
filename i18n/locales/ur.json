@@ -702,5 +702,7 @@
   "api_docs.labels.search": "Search summary",
   "api_docs.labels.funnels": "Funnels list",
   "api_docs.labels.raw": "Raw GA4 report",
-  "api_docs.labels.mcp": "MCP endpoint"
+  "api_docs.labels.mcp": "MCP endpoint",
+  "integrations.ga4_admin_api_disabled": "اس OAuth کلائنٹ کے Google Cloud پروجیکٹ میں Google Analytics Admin API فعال کریں، چند منٹ انتظار کریں، پھر دوبارہ مطابقت پذیری کریں۔",
+  "integrations.gsc_api_disabled": "اس OAuth کلائنٹ کے Google Cloud پروجیکٹ میں Google Search Console API فعال کریں، چند منٹ انتظار کریں، پھر دوبارہ مطابقت پذیری کریں۔"
 }

@@ -702,5 +702,7 @@
   "api_docs.labels.search": "搜索摘要",
   "api_docs.labels.funnels": "漏斗列表",
   "api_docs.labels.raw": "原生 GA4 报告",
-  "api_docs.labels.mcp": "MCP 端点"
+  "api_docs.labels.mcp": "MCP 端点",
+  "integrations.ga4_admin_api_disabled": "请在此 OAuth 客户端所属的 Google Cloud 项目中启用 Google Analytics Admin API，等待几分钟后重新同步。",
+  "integrations.gsc_api_disabled": "请在此 OAuth 客户端所属的 Google Cloud 项目中启用 Google Search Console API，等待几分钟后重新同步。"
 }

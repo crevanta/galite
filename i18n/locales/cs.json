@@ -702,5 +702,7 @@
   "api_docs.labels.search": "Souhrn vyhledávání",
   "api_docs.labels.funnels": "Vypsat funnely",
   "api_docs.labels.raw": "Raw GA4 report",
-  "api_docs.labels.mcp": "MCP endpoint"
+  "api_docs.labels.mcp": "MCP endpoint",
+  "integrations.ga4_admin_api_disabled": "V projektu Google Cloud, kterému patří tento klient OAuth, povolte Google Analytics Admin API, počkejte několik minut a poté znovu spusťte synchronizaci.",
+  "integrations.gsc_api_disabled": "V projektu Google Cloud, kterému patří tento klient OAuth, povolte Google Search Console API, počkejte několik minut a poté znovu spusťte synchronizaci."
 }

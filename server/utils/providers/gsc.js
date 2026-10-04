@@ -21,6 +21,7 @@
  * =================================================================== */
 
 import { isCustomPeriod, parseCustomPeriod } from '../period'
+import { googleApiErrorCode } from '../google-api-error'
 
 const ENDPOINT_AUTH     = 'https://accounts.google.com/o/oauth2/v2/auth'
 const ENDPOINT_TOKEN    = 'https://oauth2.googleapis.com/token'
@@ -168,7 +169,8 @@ async function gscGet({ accessToken, path }) {
       throw createError({ statusCode: 401, message: 'token_invalid' })
     }
     if (res.status === 403) {
-      throw createError({ statusCode: 403, message: 'gsc_permission_denied' })
+      const text = await res.text().catch(() => '')
+      throw createError({ statusCode: 403, message: googleApiErrorCode(text, 'gsc_permission_denied') })
     }
     throw createError({ statusCode: res.status, message: 'gsc_api_error' })
   }

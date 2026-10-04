@@ -62,7 +62,7 @@ export default defineEventHandler(async (event) => {
     overwriteExisting: true,
   })
   if (!result.complete) {
-    return reqFail('sync_incomplete')
+    return reqFail(result.error || 'sync_incomplete')
   }
 
   /* ---- 清用户 metrics 缓存: 项目名/URL 变了, dashboard 即时反映 ---- */

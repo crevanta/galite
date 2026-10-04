@@ -702,5 +702,7 @@
   "api_docs.labels.search": "ملخص البحث",
   "api_docs.labels.funnels": "قائمة المسارات",
   "api_docs.labels.raw": "تقرير GA4 خام",
-  "api_docs.labels.mcp": "نقطة نهاية MCP"
+  "api_docs.labels.mcp": "نقطة نهاية MCP",
+  "integrations.ga4_admin_api_disabled": "فعّل Google Analytics Admin API في مشروع Google Cloud الذي يملك عميل OAuth هذا، وانتظر بضع دقائق، ثم أعد المزامنة.",
+  "integrations.gsc_api_disabled": "فعّل Google Search Console API في مشروع Google Cloud الذي يملك عميل OAuth هذا، وانتظر بضع دقائق، ثم أعد المزامنة."
 }

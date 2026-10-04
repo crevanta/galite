@@ -702,5 +702,7 @@
   "api_docs.labels.search": "สรุปการค้นหา",
   "api_docs.labels.funnels": "รายการ funnels",
   "api_docs.labels.raw": "รายงาน GA4 raw",
-  "api_docs.labels.mcp": "MCP endpoint"
+  "api_docs.labels.mcp": "MCP endpoint",
+  "integrations.ga4_admin_api_disabled": "เปิดใช้ Google Analytics Admin API ในโปรเจ็กต์ Google Cloud ที่เป็นเจ้าของไคลเอ็นต์ OAuth นี้ รอสักครู่ แล้วซิงค์อีกครั้ง",
+  "integrations.gsc_api_disabled": "เปิดใช้ Google Search Console API ในโปรเจ็กต์ Google Cloud ที่เป็นเจ้าของไคลเอ็นต์ OAuth นี้ รอสักครู่ แล้วซิงค์อีกครั้ง"
 }

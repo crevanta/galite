@@ -702,5 +702,7 @@
   "api_docs.labels.search": "검색 요약",
   "api_docs.labels.funnels": "퍼널 목록",
   "api_docs.labels.raw": "Raw GA4 리포트",
-  "api_docs.labels.mcp": "MCP endpoint"
+  "api_docs.labels.mcp": "MCP endpoint",
+  "integrations.ga4_admin_api_disabled": "이 OAuth 클라이언트가 속한 Google Cloud 프로젝트에서 Google Analytics Admin API를 사용 설정하고 몇 분 후 다시 동기화하세요.",
+  "integrations.gsc_api_disabled": "이 OAuth 클라이언트가 속한 Google Cloud 프로젝트에서 Google Search Console API를 사용 설정하고 몇 분 후 다시 동기화하세요."
 }

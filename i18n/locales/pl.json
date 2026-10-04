@@ -702,5 +702,7 @@
   "api_docs.labels.search": "Podsumowanie wyszukiwania",
   "api_docs.labels.funnels": "Lista lejków",
   "api_docs.labels.raw": "Raw raport GA4",
-  "api_docs.labels.mcp": "Endpoint MCP"
+  "api_docs.labels.mcp": "Endpoint MCP",
+  "integrations.ga4_admin_api_disabled": "Włącz Google Analytics Admin API w projekcie Google Cloud, do którego należy ten klient OAuth, poczekaj kilka minut i ponownie uruchom synchronizację.",
+  "integrations.gsc_api_disabled": "Włącz Google Search Console API w projekcie Google Cloud, do którego należy ten klient OAuth, poczekaj kilka minut i ponownie uruchom synchronizację."
 }
