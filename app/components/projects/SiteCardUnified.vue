@@ -5,6 +5,7 @@
 
 import { computed, ref } from 'vue'
 import MiniSparkline from '~/components/projects/MiniSparkline.vue'
+import SiteFavicon from './SiteFavicon.vue'
 import { resolveProjectIcon } from '~/utils/project-icon'
 import ProjectCardMenu from './ProjectCardMenu.vue'
 
@@ -167,8 +168,7 @@ const detailLink = computed(() => isOverview.value ? null : localePath(`/project
         </template>
         <template v-else>
           <div class="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded bg-gray-100">
-            <img v-if="faviconUrl" :src="faviconUrl" class="size-full object-cover" referrerpolicy="no-referrer" alt="" />
-            <NuxtIcon v-else :name="fallbackIcon" class="size-3 text-gray-400" />
+            <SiteFavicon :src="faviconUrl" :fallback-icon="fallbackIcon" />
           </div>
           <div class="flex min-w-0 flex-1 items-center">
             <h3 class="min-w-0 truncate text-sm font-medium leading-5 text-gray-900">{{ displayName }}</h3>

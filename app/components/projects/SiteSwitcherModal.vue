@@ -21,6 +21,7 @@
    ============================================================ */
 
 import { computed, ref, watch } from 'vue'
+import SiteFavicon from './SiteFavicon.vue'
 import { resolveProjectIcon } from '~/utils/project-icon'
 
 const props = defineProps({
@@ -115,14 +116,7 @@ function onSelect(p) {
                 <!-- 列1: favicon + 名字 -->
                 <div class="flex min-w-0 items-center gap-2">
                   <div class="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded bg-gray-100">
-                    <img
-                      v-if="faviconOf(p)"
-                      :src="faviconOf(p)"
-                      class="size-full object-cover"
-                      referrerpolicy="no-referrer"
-                      alt=""
-                    />
-                    <NuxtIcon v-else name="ri:global-line" class="size-3 text-gray-400" />
+                    <SiteFavicon :src="faviconOf(p)" />
                   </div>
                   <span class="truncate text-sm font-medium text-gray-900">{{ p.name }}</span>
                 </div>

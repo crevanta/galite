@@ -20,6 +20,7 @@
 
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import MiniSparkline from '~/components/projects/MiniSparkline.vue'
+import SiteFavicon from './SiteFavicon.vue'
 import { resolveProjectIcon } from '~/utils/project-icon'
 
 const props = defineProps({
@@ -181,14 +182,7 @@ const detailLink = computed(() =>
         </template>
         <template v-else>
           <div class="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded bg-gray-100">
-            <img
-              v-if="faviconUrl"
-              :src="faviconUrl"
-              class="size-full object-cover"
-              referrerpolicy="no-referrer"
-              alt=""
-            />
-            <NuxtIcon v-else :name="fallbackIcon" class="size-3 text-gray-400" />
+            <SiteFavicon :src="faviconUrl" :fallback-icon="fallbackIcon" />
           </div>
           <h3 class="truncate text-sm font-medium text-gray-900">{{ displayName }}</h3>
         </template>
